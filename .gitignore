@@ -361,3 +361,7 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/coremark_val.txt
+/dhrystone_val.txt
+/fibonacci_val.txt
+/linpack_val.txt
