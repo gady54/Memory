@@ -365,3 +365,6 @@ FodyWeavers.xsd
 /dhrystone_val.txt
 /fibonacci_val.txt
 /linpack_val.txt
+/Memory/Memory.vcxproj
+/Memory/Memory.vcxproj.filters
+/Memory/simulatore_example.c
