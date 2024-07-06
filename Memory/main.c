@@ -141,7 +141,7 @@ void readConfiguration(const char* filename, CacheConfig* l1, CacheConfig* l2, C
     fclose(file);
 }
 
-int main()
+/*int main()
 {
     CacheConfig l1, l2, l3;
     DDRConfig ddr;
@@ -159,4 +159,4 @@ int main()
     free(ddr.banks);
 
     return 0;
-}
+}*/

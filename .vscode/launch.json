@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "c:/Users/gadyy/Documents/Electrical_Enginering/fourth_year/Project_Memory/Memory/Memory",
-      "program": "c:/Users/gadyy/Documents/Electrical_Enginering/fourth_year/Project_Memory/Memory/Memory/build/Debug/outDebug",
+      "cwd": "c:/Users/gadyy/Documents/Electrical_Enginering/fourth_year/Project_Memory/Memory",
+      "program": "c:/Users/gadyy/Documents/Electrical_Enginering/fourth_year/Project_Memory/Memory/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [
