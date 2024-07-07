@@ -164,7 +164,7 @@ uint32_t access_dram(DRAMController *controller, uint32_t address, int *total_la
     last_accessed_address = address;
 
     printf("%-4d | %-4d | %-6d | 0x%08x | %-9s | %-7d cycles\n",
-           bank, row, col, address, current_bank->active_row == row ? "Yes" : "No", latency);
+           bank, row, col, address, current_bank->active_row == row ? "NO" : "YES", latency);
 
     *total_latency = latency;
     return address; // Return the accessed address
