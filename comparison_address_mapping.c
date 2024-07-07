@@ -208,7 +208,13 @@ int main() {
     DRAM dram; // Declare a DRAM structure
     DRAMController controller; // Declare a DRAM controller structure
 
-    uint32_t addresses[] = {0xffa2, 0x0010, 0x0040, 0x0c20, 0x0cd5, 0x0040, 0xf5ca, 0xf8a03, 0x81ff, 0x5588, 0xfdc6, 0x123f, 0x55ff, 0xc2fd};
+    // Addresses designed to show benefits of cache block interleaving
+    uint32_t addresses[] = {
+    0x0000, 0x0040, 0x0080, 0x00C0, // Addresses within the same cache block, but different rows in row interleaving
+    0x0400, 0x0440, 0x0480, 0x04C0, // Next set of addresses within the same cache block
+    0x0800, 0x0840, 0x0880, 0x08C0, // And so on...
+    0x0C00, 0x0C40, 0x0C80, 0x0CC0  // Ensuring each subsequent address falls within the same bank and row for cache block interleaving
+};
     int num_addresses = sizeof(addresses) / sizeof(addresses[0]);
 
     int choice;
