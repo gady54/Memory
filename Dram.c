@@ -203,13 +203,42 @@ void visualize_dram_access(DRAMController *controller, uint32_t addresses[], int
     print_dram_state(controller->dram);
 }
 
+// Function to read addresses from a file
+int read_addresses_from_file(const char *filename, uint32_t **addresses) {
+    FILE *file = fopen(filename, "r");
+    if (!file) {
+        printf("Failed to open file %s\n", filename);
+        return 0;
+    }
+
+    int count = 0;
+    uint32_t address;
+    while (fscanf(file, "%x", &address) != EOF) {
+        count++;
+    }
+
+    rewind(file);
+    *addresses = (uint32_t *)malloc((size_t)count * sizeof(uint32_t)); // Explicitly cast count to size_t
+    for (int i = 0; i < count; i++) {
+        fscanf(file, "%x", &(*addresses)[i]);
+    }
+
+    fclose(file);
+    return count;
+}
+
 // Main function to demonstrate the DRAM access simulation
 int main() {
     DRAM dram; // Declare a DRAM structure
     DRAMController controller; // Declare a DRAM controller structure
 
-    uint32_t addresses[] = {0xffa2, 0x0010, 0x0040, 0x0c20, 0x0cd5, 0x0040, 0xf5ca, 0xf8a03, 0x81ff, 0x5588, 0xfdc6, 0x123f, 0x55ff, 0xc2fd};
-    int num_addresses = sizeof(addresses) / sizeof(addresses[0]);
+    uint32_t *addresses;
+    int num_addresses = read_addresses_from_file("address.txt", &addresses);
+
+    if (num_addresses == 0) {
+        printf("No addresses to process. Exiting.\n");
+        return 1;
+    }
 
     int choice;
     printf("Choose address mapping method:\n");
@@ -230,6 +259,7 @@ int main() {
         printf("Using Cache Block Interleaving:\n");
     } else {
         printf("Invalid choice. Exiting.\n");
+        free(addresses);
         return 1;
     }
 
@@ -239,8 +269,9 @@ int main() {
     // Print the last accessed address
     printf("Last accessed address: 0x%08x\n", last_accessed_address);
 
-    // Free the allocated memory in the DRAM structure
+    // Free the allocated memory
     free_dram(&dram);
+    free(addresses);
 
     return 0;
 }
