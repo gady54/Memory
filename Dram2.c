@@ -14,7 +14,7 @@
 #define RANK 1
 #define CACHE_BLOCK_SIZE 64 // Assuming 64 bytes cache block
 #define PRECHARGE_TIME 50 // Hypothetical precharge time
-
+#define MAX_REQUESTS 10000
 // Global variable to store the last accessed address
 uint32_t last_accessed_address = 0;
 
@@ -30,15 +30,36 @@ typedef struct {
     int time;               // Global time counter
 } DRAM;
 
-// Structure representing a memory request
+// Memory request structure and queue
 typedef struct {
     uint32_t address;
     int time_arrived;
 } MemoryRequest;
 
-#define MAX_REQUESTS 32
+
 MemoryRequest request_queue[MAX_REQUESTS];
 int queue_size = 0;
+
+void add_request(uint32_t address, int time_arrived) {
+    if (queue_size < MAX_REQUESTS) {
+        request_queue[queue_size].address = address;
+        request_queue[queue_size].time_arrived = time_arrived;
+        queue_size++;
+    } else {
+        printf("Request queue full!\n");
+    }
+}
+
+int get_next_request_index() {
+    if (queue_size == 0) return -1;
+    int oldest_index = 0;
+    for (int i = 1; i < queue_size; i++) {
+        if (request_queue[i].time_arrived < request_queue[oldest_index].time_arrived) {
+            oldest_index = i;
+        }
+    }
+    return oldest_index;
+}
 
 // Function for row interleaving: translate an address to bank, row, and column
 void row_interleaving(uint32_t address, int *bank, int *row, int *col) {
@@ -56,9 +77,11 @@ void cache_block_interleaving(uint32_t address, int *bank, int *row, int *col) {
 }
 
 // Hypothetical function to simulate sending the address to the cache
-void send_to_cache(uint32_t address) {
-    printf("Address 0x%08x is sent to the cache.\n", address);
+int send_to_cache(uint32_t address, int latency) {
+    printf("Address 0x%08x is sent to the cache with latency %d cycles.\n", address, latency);
+    return latency;
 }
+
 
 // Function to access a specific address in DRAM through the controller
 uint32_t access_dram(DRAM *dram, uint32_t address, int *total_latency, void (*address_mapping)(uint32_t, int*, int*, int*), bool is_cache_block_interleaving) {
@@ -101,8 +124,8 @@ uint32_t access_dram(DRAM *dram, uint32_t address, int *total_latency, void (*ad
     // Add CAS latency for accessing the column
     latency += CAS_TIME;
 
-    // Send the address to the cache
-    send_to_cache(address);
+    // Send the address and latency to the cache
+    send_to_cache(address, latency);
 
     // Update the global time and the bank's last accessed time
     dram->time += latency;
@@ -129,44 +152,6 @@ void print_dram_state(DRAM *dram) {
     }
     printf("-------------------------------------------------------------\n");
     printf("Global Time: %d\n", dram->time);
-}
-
-// Function to visualize the DRAM access for multiple addresses
-void visualize_dram_access(DRAM *dram, uint32_t addresses[], int num_addresses, void (*address_mapping)(uint32_t, int*, int*, int*), bool is_cache_block_interleaving) {
-    int total_latency;
-    int total_time_access = 0;
-    printf("Bank | Row  | Column | Address     | Row Active | Latency\n");
-    printf("-------------------------------------------------------------\n");
-    for (int i = 0; i < num_addresses; i++) {
-        access_dram(dram, addresses[i], &total_latency, address_mapping, is_cache_block_interleaving);
-        total_time_access += total_latency;
-    }
-    printf("-------------------------------------------------------------\n");
-    print_dram_state(dram);
-    printf("Total Time Access: %d cycles\n", total_time_access);
-}
-
-// Function to add a memory request to the queue
-void add_request(uint32_t address, int time_arrived) {
-    if (queue_size < MAX_REQUESTS) {
-        request_queue[queue_size].address = address;
-        request_queue[queue_size].time_arrived = time_arrived;
-        queue_size++;
-    } else {
-        printf("Request queue full!\n");
-    }
-}
-
-// Function to get the next request index based on the FCFS policy
-int get_next_request_index() {
-    if (queue_size == 0) return -1;
-    int oldest_index = 0;
-    for (int i = 1; i < queue_size; i++) {
-        if (request_queue[i].time_arrived < request_queue[oldest_index].time_arrived) {
-            oldest_index = i;
-        }
-    }
-    return oldest_index;
 }
 
 // Function to read addresses from a file
@@ -243,7 +228,7 @@ int main() {
         add_request(addresses[i], dram.time);
     }
 
-    // Process requests using the FCFS policy
+    // Process the requests
     while (queue_size > 0) {
         int next_request_index = get_next_request_index();
         if (next_request_index == -1) break;
@@ -259,7 +244,11 @@ int main() {
         queue_size--;
     }
 
+    // Print the last accessed address
     printf("Last accessed address: 0x%08x\n", last_accessed_address);
+
+    // Print the state of the DRAM banks
+    print_dram_state(&dram);
 
     // Free the allocated memory
     free(addresses);
