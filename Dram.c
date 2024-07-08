@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h> // for uint32_t
+#include <stdbool.h>
 
 #define BUS_WIDTH 4
 #define CHANNELS 1
@@ -11,6 +12,7 @@
 #define RAS_TIME 100
 #define CAS_TIME 50
 #define CACHE_BLOCK_SIZE 64 // Assuming 64 bytes cache block
+#define MAX_PENDING_REQUESTS 16 // Maximum number of pending requests in the scheduler
 
 // Global variable to store the last accessed address
 uint32_t last_accessed_address = 0;
@@ -29,10 +31,22 @@ typedef struct {
     int time;               // Global time counter
 } DRAM;
 
+// Structure representing a memory request
+typedef struct {
+    uint32_t address;
+    int bank;
+    int row;
+    int col;
+} MemoryRequest;
+
 // Structure representing the DRAM Controller
 typedef struct {
     DRAM *dram;             // Pointer to the DRAM
     void (*address_mapping)(uint32_t, int*, int*, int*); // Function pointer for address mapping
+    MemoryRequest pending_requests[MAX_PENDING_REQUESTS]; // Queue of pending requests
+    int num_pending_requests; // Number of pending requests
+    MemoryRequest *address_map; // Mapping table for addresses
+    int address_map_size; // Size of the address map
 } DRAMController;
 
 // Function to initialize the DRAM structure
@@ -70,6 +84,15 @@ void free_dram(DRAM *dram) {
 void init_dram_controller(DRAMController *controller, DRAM *dram, void (*address_mapping)(uint32_t, int*, int*, int*)) {
     controller->dram = dram;
     controller->address_mapping = address_mapping;
+    controller->num_pending_requests = 0;
+    controller->address_map_size = 0;
+    controller->address_map = NULL;
+}
+
+// Function to allocate the address map
+void allocate_address_map(DRAMController *controller, int size) {
+    controller->address_map = (MemoryRequest *)malloc(size * sizeof(MemoryRequest));
+    controller->address_map_size = size;
 }
 
 // Function for row interleaving: translate an address to bank, row, and column
@@ -98,18 +121,47 @@ void save_address_in_bank(DRAMBank *bank, uint32_t address, int row, int col) {
     bank->row_counts[row]++;
 }
 
-// Function to find a new bank or row if the current row is full
-void find_new_bank_or_row(DRAM *dram, int *bank, int *row) {
+// Function to update the mapping table
+void update_address_mapping(DRAMController *controller, uint32_t address, int bank, int row, int col) {
+    for (int i = 0; i < controller->address_map_size; i++) {
+        if (controller->address_map[i].address == address) {
+            controller->address_map[i].bank = bank;
+            controller->address_map[i].row = row;
+            controller->address_map[i].col = col;
+            return;
+        }
+    }
+    // If the address is not already in the map, add it
+    controller->address_map[controller->address_map_size++] = (MemoryRequest){address, bank, row, col};
+}
+
+// Function to find the current mapping of an address
+bool find_address_mapping(DRAMController *controller, uint32_t address, int *bank, int *row, int *col) {
+    for (int i = 0; i < controller->address_map_size; i++) {
+        if (controller->address_map[i].address == address) {
+            *bank = controller->address_map[i].bank;
+            *row = controller->address_map[i].row;
+            *col = controller->address_map[i].col;
+            return true;
+        }
+    }
+    return false;
+}
+
+// Function to find a new bank or row if the current row is full or has a conflict
+void find_new_bank_or_row(DRAMController *controller, uint32_t address, int *bank, int *row, int col) {
+    DRAM *dram = controller->dram;
     for (int b = 0; b < BANKS; b++) {
         for (int r = 0; r < ROWS; r++) {
-            if (dram->banks[b].row_counts[r] < COLUMNS) {
+            if (dram->banks[b].row_counts[r] < COLUMNS && dram->banks[b].stored_addresses[r][col] == 0) {
                 *bank = b;
                 *row = r;
+                update_address_mapping(controller, address, b, r, col);
                 return;
             }
         }
     }
-    printf("All banks and rows are full.\n");
+    printf("All banks and rows are full or have conflicts.\n");
 }
 
 // Hypothetical function to simulate sending the address to the cache
@@ -123,8 +175,13 @@ uint32_t access_dram(DRAMController *controller, uint32_t address, int *total_la
     int latency = 0;
     DRAM *dram = controller->dram;
 
-    // Translate the address using the provided mapping function
-    controller->address_mapping(address, &bank, &row, &col);
+    // Check if the address has already been remapped
+    if (!find_address_mapping(controller, address, &bank, &row, &col)) {
+        // If not, translate the address using the provided mapping function
+        controller->address_mapping(address, &bank, &row, &col);
+        // Save the initial mapping in the address map
+        update_address_mapping(controller, address, bank, row, col);
+    }
     
     // Access the specified bank, row, and column
     DRAMBank *current_bank = &dram->banks[bank];
@@ -135,10 +192,10 @@ uint32_t access_dram(DRAMController *controller, uint32_t address, int *total_la
         send_to_cache(address);
         latency += CAS_TIME; // Add CAS latency for accessing the column
     } else {
-        // Check if the current row is full
-        if (current_bank->row_counts[row] >= COLUMNS) {
-            printf("Row %d in Bank %d is full. Finding new bank or row.\n", row, bank);
-            find_new_bank_or_row(dram, &bank, &row);
+        // Check if the current row is full or has a conflict
+        if (current_bank->row_counts[row] >= COLUMNS || current_bank->stored_addresses[row][col] != 0) {
+            printf("Row %d in Bank %d is full or has a conflict at column %d. Finding new bank or row.\n", row, bank, col);
+            find_new_bank_or_row(controller, address, &bank, &row, col);
             current_bank = &dram->banks[bank]; // Update the current bank reference
         }
 
@@ -191,13 +248,49 @@ void print_dram_state(DRAM *dram) {
     printf("Global Time: %d\n", dram->time);
 }
 
+// Scheduler function to prioritize memory requests
+void schedule_requests(DRAMController *controller) {
+    // Sort pending requests based on row number to minimize row conflicts
+    for (int i = 0; i < controller->num_pending_requests - 1; i++) {
+        for (int j = i + 1; j < controller->num_pending_requests; j++) {
+            if (controller->pending_requests[i].row > controller->pending_requests[j].row) {
+                MemoryRequest temp = controller->pending_requests[i];
+                controller->pending_requests[i] = controller->pending_requests[j];
+                controller->pending_requests[j] = temp;
+            }
+        }
+    }
+}
+
+// Function to add a memory request to the scheduler
+void add_request_to_scheduler(DRAMController *controller, uint32_t address) {
+    if (controller->num_pending_requests < MAX_PENDING_REQUESTS) {
+        int bank, row, col;
+        if (find_address_mapping(controller, address, &bank, &row, &col)) {
+            controller->pending_requests[controller->num_pending_requests++] = (MemoryRequest){address, bank, row, col};
+        } else {
+            controller->address_mapping(address, &bank, &row, &col);
+            update_address_mapping(controller, address, bank, row, col);
+            controller->pending_requests[controller->num_pending_requests++] = (MemoryRequest){address, bank, row, col};
+        }
+    } else {
+        printf("Scheduler queue is full. Cannot add more requests.\n");
+    }
+}
+
 // Function to visualize the DRAM access for multiple addresses
 void visualize_dram_access(DRAMController *controller, uint32_t addresses[], int num_addresses) {
     int total_latency;
     printf("Bank | Row  | Column | Address     | Row Active | Latency\n");
     printf("-------------------------------------------------------------\n");
     for (int i = 0; i < num_addresses; i++) {
-        access_dram(controller, addresses[i], &total_latency);
+        add_request_to_scheduler(controller, addresses[i]);
+    }
+
+    // Schedule and process requests
+    schedule_requests(controller);
+    for (int i = 0; i < controller->num_pending_requests; i++) {
+        access_dram(controller, controller->pending_requests[i].address, &total_latency);
     }
     printf("-------------------------------------------------------------\n");
     print_dram_state(controller->dram);
@@ -263,6 +356,9 @@ int main() {
         return 1;
     }
 
+    // Allocate address map
+    allocate_address_map(&controller, num_addresses);
+
     // Access various addresses using the chosen address mapping
     visualize_dram_access(&controller, addresses, num_addresses);
 
@@ -271,6 +367,7 @@ int main() {
 
     // Free the allocated memory
     free_dram(&dram);
+    free(controller.address_map);
     free(addresses);
 
     return 0;
