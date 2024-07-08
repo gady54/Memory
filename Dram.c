@@ -182,9 +182,12 @@ uint32_t access_dram(DRAMController *controller, uint32_t address, int *total_la
         // Save the initial mapping in the address map
         update_address_mapping(controller, address, bank, row, col);
     }
-    
+
     // Access the specified bank, row, and column
     DRAMBank *current_bank = &dram->banks[bank];
+
+    // Store the previously active row
+    int previous_active_row = current_bank->active_row;
 
     // Check if the requested address is already in the bank
     if (is_address_in_bank(current_bank, address, row, col)) {
@@ -221,11 +224,12 @@ uint32_t access_dram(DRAMController *controller, uint32_t address, int *total_la
     last_accessed_address = address;
 
     printf("%-4d | %-4d | %-6d | 0x%08x | %-9s | %-7d cycles\n",
-           bank, row, col, address, current_bank->active_row == row ? "NO" : "YES", latency);
+           bank, row, col, address, previous_active_row == row ? "YES" : "NO", latency);
 
     *total_latency = latency;
     return address; // Return the accessed address
 }
+
 
 // Function to print the state of the DRAM banks
 void print_dram_state(DRAM *dram) {
