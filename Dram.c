@@ -91,7 +91,7 @@ void init_dram_controller(DRAMController *controller, DRAM *dram, void (*address
 
 // Function to allocate the address map
 void allocate_address_map(DRAMController *controller, int size) {
-    controller->address_map = (MemoryRequest *)malloc(size * sizeof(MemoryRequest));
+    controller->address_map = (MemoryRequest *)malloc((size_t)size * sizeof(MemoryRequest));
     controller->address_map_size = size;
 }
 
