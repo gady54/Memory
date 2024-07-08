@@ -104,10 +104,10 @@ void row_interleaving(uint32_t address, int *bank, int *row, int *col) {
 
 // Function for cache block interleaving: translate an address to bank, row, and column
 void cache_block_interleaving(uint32_t address, int *bank, int *row, int *col) {
-    *row = (int)((address >> 12) & 0xFF);     // Row is determined by bits 12-19 (8 bits)
-    *bank = (int)((address >> 8) & 0x3);      // Bank is determined by bits 8-9 (2 bits)
-    *col = (int)((((address >> 10) & 0x3) << 8) | ((address >> 2) & 0xFF)); // High column bits (2 bits) and Low column bits (8 bits)
-    // Byte in bus (bits 0-1) is not used in this calculation
+    *col = (int)((address >> 2) & 0xFF); // Low column bits (8 bits)
+    *bank = (int)((address >> 10) & 0x3); // Bank bits (2 bits)
+    *row = (int)((address >> 12) & 0x3FFFF); // Row bits (18 bits)
+    // High column bits (2 bits) are included in *col calculation
 }
 
 // Function to check if an address is present in the bank
@@ -224,7 +224,7 @@ uint32_t access_dram(DRAMController *controller, uint32_t address, int *total_la
     last_accessed_address = address;
 
     printf("%-4d | %-4d | %-6d | 0x%08x | %-9s | %-7d cycles\n",
-           bank, row, col, address, previous_active_row == row ? "YES" : "NO", latency);
+           bank, row, col, address, previous_active_row == row ? "NO" : "YES", latency);
 
     *total_latency = latency;
     return address; // Return the accessed address
