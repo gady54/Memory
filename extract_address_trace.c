@@ -2,14 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include "extract_address_trace.h"
 
 #define MAX_LINE_LENGTH 256
-#define NUM_REGISTERS 32
-
-typedef struct {
-    char name[3];
-    unsigned int address;
-} Register;
 
 void init_registers(Register registers[], int num_registers) {
     for (int i = 0; i < num_registers; i++) {
@@ -42,7 +37,12 @@ void update_register_address(Register registers[], int num_registers, const char
     }
 }
 
-void process_command(char *command, Register registers[], int num_registers) {
+void send_to_cache_simulator(unsigned int address) {
+    // Placeholder function to simulate sending the address to the cache memory simulator
+    printf("Address 0x%08X sent to cache memory simulator\n", address);
+}
+
+unsigned int process_command(char *command, Register registers[], int num_registers) {
     char instruction[3];
     char reg1[3], reg2[3];
     int offset;
@@ -52,7 +52,8 @@ void process_command(char *command, Register registers[], int num_registers) {
         unsigned int final_address = base_address + (unsigned int)offset;
 
         if (strcmp(instruction, "lw") == 0 || strcmp(instruction, "sw") == 0) {
-            printf("Command: %s, Final address: 0x%08X, Register: %s\n", command, final_address, strcmp(instruction, "lw") == 0 ? reg1 : reg2);
+            //printf("Command: %s, Final address: 0x%08X, Register: %s\n", command, final_address, strcmp(instruction, "lw") == 0 ? reg1 : reg2);
+            //send_to_cache_simulator(final_address);  // Send the address to the cache simulator
         }
 
         // For 'sw' commands, update the base register address
@@ -60,13 +61,12 @@ void process_command(char *command, Register registers[], int num_registers) {
             update_register_address(registers, num_registers, reg2, final_address);
         }
 
-        // Simulate sending the address to the cache memory simulator
-        // This would be an actual function call in a real application
-        // send_to_cache_simulator(final_address);
+        return final_address;
     }
+    return 0;
 }
 
-int main() {
+int extract_addresses_from_file(const char *filename, unsigned int **addresses) {
     srand((unsigned int)time(NULL));
 
     Register registers[NUM_REGISTERS] = {
@@ -81,23 +81,33 @@ int main() {
     };
 
     init_registers(registers, NUM_REGISTERS);
-    print_registers(registers, NUM_REGISTERS);
+    //print_registers(registers, NUM_REGISTERS);  // Print initial register addresses for debugging
 
-    FILE *inputFile = fopen("linpack_val.txt", "r");
+    FILE *inputFile = fopen(filename, "r");
     if (inputFile == NULL) {
         perror("Error opening input file");
-        return 1;
+        return 0;
     }
 
     char line[MAX_LINE_LENGTH];
+    int count = 0;
+    unsigned int *temp_addresses = (unsigned int *)malloc(sizeof(unsigned int) * MAX_REQUESTS);
+
     while (fgets(line, sizeof(line), inputFile)) {
         if (line[strlen(line) - 1] == '\n') {
             line[strlen(line) - 1] = '\0';  // Remove newline character
         }
-        process_command(line, registers, NUM_REGISTERS);
+        unsigned int address = process_command(line, registers, NUM_REGISTERS);
+        if (address != 0) {
+            temp_addresses[count++] = address;
+        }
     }
 
     fclose(inputFile);
 
-    return 0;
+    *addresses = (unsigned int *)malloc(sizeof(unsigned int) * (size_t)count);
+    memcpy(*addresses, temp_addresses, sizeof(unsigned int) * (size_t)count);
+    free(temp_addresses);
+
+    return count;
 }

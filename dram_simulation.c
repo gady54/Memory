@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <stdint.h> // for uint32_t
 #include <stdbool.h>
+#include <string.h>
+#include "dram_simulation.h"
 
 #define BUS_WIDTH 4
 #define CHANNELS 1
@@ -15,6 +17,8 @@
 #define CACHE_BLOCK_SIZE 64 // Assuming 64 bytes cache block
 #define PRECHARGE_TIME 50 // Hypothetical precharge time
 #define MAX_REQUESTS 10000
+#define Mapping_Method "Cache block interleaving" // Using string instead of char
+
 // Global variable to store the last accessed address
 uint32_t last_accessed_address = 0;
 
@@ -35,7 +39,6 @@ typedef struct {
     uint32_t address;
     int time_arrived;
 } MemoryRequest;
-
 
 MemoryRequest request_queue[MAX_REQUESTS];
 int queue_size = 0;
@@ -82,9 +85,8 @@ int send_to_cache(uint32_t address, int latency) {
     return latency;
 }
 
-
 // Function to access a specific address in DRAM through the controller
-uint32_t access_dram(DRAM *dram, uint32_t address, int *total_latency, void (*address_mapping)(uint32_t, int*, int*, int*), bool is_cache_block_interleaving) {
+uint32_t access_dram(DRAM *dram, uint32_t address, int *total_latency, void (*address_mapping)(uint32_t, int*, int*, int*)) {
     int bank, row, col;
     int latency = 0;
 
@@ -97,7 +99,7 @@ uint32_t access_dram(DRAM *dram, uint32_t address, int *total_latency, void (*ad
     // Store the previously active row
     int previous_active_row = current_bank->active_row;
 
-    if (is_cache_block_interleaving) {
+    if (strcmp(Mapping_Method, "Cache block interleaving") == 0) {
         // Cache block interleaving logic
         if (current_bank->active_row != row) {
             // If there was a previously active row, add precharge latency
@@ -125,7 +127,8 @@ uint32_t access_dram(DRAM *dram, uint32_t address, int *total_latency, void (*ad
     latency += CAS_TIME;
 
     // Send the address and latency to the cache
-    send_to_cache(address, latency);
+    
+    //send_to_cache(address, latency);
 
     // Update the global time and the bank's last accessed time
     dram->time += latency;
@@ -133,15 +136,47 @@ uint32_t access_dram(DRAM *dram, uint32_t address, int *total_latency, void (*ad
 
     // Update the last accessed address
     last_accessed_address = address;
-    printf("Bank | Row  | Col    |  Address   | Row actice| Latency\n");
-    printf("%-4d | %-4d | %-6d | 0x%08x | %-9s | %-7d cycles\n",
-           bank, row, col, address, (previous_active_row == row) ? "YES" : "NO", latency);
 
     *total_latency = latency;
     return address; // Return the accessed address
 }
 
+// Function to simulate DRAM access and return address and latency
+
+int simulate_dram_access(uint32_t address) {
+    static DRAM dram = {0}; // Declare and initialize a DRAM structure (static to retain state across calls)
+    // Initialize DRAM banks if this is the first access
+    if (dram.banks[0].active_row == 0 && dram.banks[0].time_last_accessed == 0 && dram.time == 0) {
+        for (int i = 0; i < BANKS; i++) {
+            dram.banks[i].active_row = -1;
+            dram.banks[i].time_last_accessed = 0;
+        }
+    }
+
+    int total_latency;
+    void (*address_mapping)(uint32_t, int*, int*, int*);
+
+    // Set the address mapping function based on user choice
+    if (strcmp(Mapping_Method, "Row interleaving") == 0) {
+        address_mapping = row_interleaving;
+        printf("Using Row Interleaving:\n");
+    } else if (strcmp(Mapping_Method, "Cache block interleaving") == 0) {
+        address_mapping = cache_block_interleaving;
+        printf("Using Cache Block Interleaving:\n");
+    } else {
+        printf("Invalid choice. Exiting.\n");
+        return -1;
+    }
+
+    // Access the address in DRAM
+    access_dram(&dram, address, &total_latency, address_mapping);
+
+    return total_latency;
+}
+
+
 // Function to print the state of the DRAM banks
+/*/
 void print_dram_state(DRAM *dram) {
     printf("DRAM State:\n");
     printf("-------------------------------------------------------------\n");
@@ -170,11 +205,6 @@ int read_addresses_from_file(const char *filename, uint32_t **addresses) {
 
     rewind(file);
     *addresses = (uint32_t *)malloc((size_t)count * sizeof(uint32_t)); // Explicitly cast count to size_t
-    if (!*addresses) {
-        perror("Failed to allocate memory for addresses");
-        fclose(file); // Ensure file is closed before exiting
-        exit(EXIT_FAILURE);
-    }
     for (int i = 0; i < count; i++) {
         fscanf(file, "%x", &(*addresses)[i]);
     }
@@ -183,7 +213,9 @@ int read_addresses_from_file(const char *filename, uint32_t **addresses) {
     return count;
 }
 
+
 // Main function to demonstrate the DRAM access simulation
+
 int main() {
     DRAM dram = {0}; // Declare and initialize a DRAM structure
     // Initialize DRAM banks
@@ -200,22 +232,13 @@ int main() {
         return 1;
     }
 
-    int choice;
     void (*address_mapping)(uint32_t, int*, int*, int*);
-    bool is_cache_block_interleaving = false;
-    printf("Choose address mapping method:\n");
-    printf("1. Row Interleaving\n");
-    printf("2. Cache Block Interleaving\n");
-    printf("Enter your choice: ");
-    scanf("%d", &choice);
-
     // Set the address mapping function based on user choice
-    if (choice == 1) {
+    if (strcmp(Mapping_Method, "Row interleaving") == 0) {
         address_mapping = row_interleaving;
         printf("Using Row Interleaving:\n");
-    } else if (choice == 2) {
+    } else if (strcmp(Mapping_Method, "Cache block interleaving") == 0) {
         address_mapping = cache_block_interleaving;
-        is_cache_block_interleaving = true;
         printf("Using Cache Block Interleaving:\n");
     } else {
         printf("Invalid choice. Exiting.\n");
@@ -235,7 +258,7 @@ int main() {
 
         uint32_t address = request_queue[next_request_index].address;
         int total_latency;
-        access_dram(&dram, address, &total_latency, address_mapping, is_cache_block_interleaving);
+        access_dram(&dram, address, &total_latency, address_mapping);
 
         // Remove the processed request from the queue
         for (int i = next_request_index; i < queue_size - 1; i++) {
@@ -255,3 +278,4 @@ int main() {
 
     return 0;
 }
+/*/
