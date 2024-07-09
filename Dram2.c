@@ -133,7 +133,7 @@ uint32_t access_dram(DRAM *dram, uint32_t address, int *total_latency, void (*ad
 
     // Update the last accessed address
     last_accessed_address = address;
-
+    printf("Bank | Row  | Col    |  Address   | Row actice| Latency\n");
     printf("%-4d | %-4d | %-6d | 0x%08x | %-9s | %-7d cycles\n",
            bank, row, col, address, (previous_active_row == row) ? "YES" : "NO", latency);
 
