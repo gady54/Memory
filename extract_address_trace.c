@@ -6,12 +6,6 @@
 
 #define MAX_LINE_LENGTH 256
 
-void init_registers(Register registers[], int num_registers) {
-    for (int i = 0; i < num_registers; i++) {
-        registers[i].address = (unsigned int)rand() % 0xFFFFFFFF;
-    }
-}
-
 void print_registers(const Register registers[], int num_registers) {
     printf("Initial register addresses:\n");
     for (int i = 0; i < num_registers; i++) {
@@ -52,7 +46,7 @@ unsigned int process_command(char *command, Register registers[], int num_regist
         unsigned int final_address = base_address + (unsigned int)offset;
 
         if (strcmp(instruction, "lw") == 0 || strcmp(instruction, "sw") == 0) {
-            //printf("Command: %s, Final address: 0x%08X, Register: %s\n", command, final_address, strcmp(instruction, "lw") == 0 ? reg1 : reg2);
+            printf("Command: %s, Final address: 0x%08X, Register: %s\n", command, final_address, strcmp(instruction, "lw") == 0 ? reg1 : reg2);
             //send_to_cache_simulator(final_address);  // Send the address to the cache simulator
         }
 
@@ -67,20 +61,17 @@ unsigned int process_command(char *command, Register registers[], int num_regist
 }
 
 int extract_addresses_from_file(const char *filename, unsigned int **addresses) {
-    srand((unsigned int)time(NULL));
-
     Register registers[NUM_REGISTERS] = {
-        {"ra", 0}, {"sp", 0}, {"a0", 0}, {"a1", 0},
-        {"a2", 0}, {"a3", 0}, {"a4", 0}, {"a5", 0},
-        {"a6", 0}, {"a7", 0}, {"t0", 0}, {"t1", 0},
-        {"t2", 0}, {"t3", 0}, {"t4", 0}, {"t5", 0},
-        {"t6", 0}, {"s0", 0}, {"s1", 0}, {"s2", 0},
-        {"s3", 0}, {"s4", 0}, {"s5", 0}, {"s6", 0},
-        {"s7", 0}, {"s8", 0}, {"s9", 0}, {"s10", 0},
-        {"s11", 0}, {"x0", 0}, {"x1", 0}, {"x2", 0}
+        {"ra", 0x1000}, {"sp", 0x2000}, {"a0", 0x3000}, {"a1", 0x4000},
+        {"a2", 0x5000}, {"a3", 0x6000}, {"a4", 0x7000}, {"a5", 0x8000},
+        {"a6", 0x9000}, {"a7", 0xA000}, {"t0", 0xB000}, {"t1", 0xC000},
+        {"t2", 0xD000}, {"t3", 0xE000}, {"t4", 0xF000}, {"t5", 0x10000},
+        {"t6", 0x11000}, {"s0", 0x12000}, {"s1", 0x13000}, {"s2", 0x14000},
+        {"s3", 0x15000}, {"s4", 0x16000}, {"s5", 0x17000}, {"s6", 0x18000},
+        {"s7", 0x19000}, {"s8", 0x1A000}, {"s9", 0x1B000}, {"s10", 0x1C000},
+        {"s11", 0x1D000}, {"x0", 0x1E000}, {"x1", 0x1F000}, {"x2", 0x20000}
     };
 
-    init_registers(registers, NUM_REGISTERS);
     //print_registers(registers, NUM_REGISTERS);  // Print initial register addresses for debugging
 
     FILE *inputFile = fopen(filename, "r");

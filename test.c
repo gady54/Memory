@@ -1,32 +1,28 @@
 #define _CRT_SECURE_NO_WARNINGS
-#include "dram_simulation.h"
+#include "dram_simulation.h" // Include the new header file for dram_simulation.c
 #include "extract_address_trace.h" // Include the new header file for extract_address_trace.c
 #include <stdio.h>
 #include <stdint.h> // for uint32_t
 #include <stdlib.h> // for malloc and free
+#include "cache_simulation.h" // Include the new header file for cache_simulation.c
 
 int main() {
-    unsigned int *addresses;
+    unsigned int* addresses;
     int num_addresses = extract_addresses_from_file("linpack_val.txt", &addresses);
     if (num_addresses == 0) {
         printf("No addresses extracted. Exiting.\n");
         return 1;
     }
 
-    int total_latency = 0;
-    int latency;
+    
 
-    // Call the simulate_dram_access function with each address
+    // Process each address through the cache simulation
     for (int i = 0; i < num_addresses; i++) {
-        latency = simulate_dram_access(addresses[i]);
-        total_latency += latency;
-
-        // Print the accessed address and latency
-        printf("Accessed address: 0x%08x, Latency: %d cycles\n", addresses[i], latency);
+        simulate_cache(addresses[i]);
     }
 
-    // Print the total latency
-    printf("Total latency: %d cycles\n", total_latency);
+    // Print final simulation results
+    print_simulation_results();
 
     // Free the allocated memory
     free(addresses);

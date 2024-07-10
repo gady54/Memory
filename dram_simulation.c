@@ -17,7 +17,7 @@
 #define CACHE_BLOCK_SIZE 64 // Assuming 64 bytes cache block
 #define PRECHARGE_TIME 50 // Hypothetical precharge time
 #define MAX_REQUESTS 10000
-#define Mapping_Method "Cache block interleaving" // Using string instead of char
+#define Mapping_Method "Row interleaving" // Using string instead of char
 
 // Global variable to store the last accessed address
 uint32_t last_accessed_address = 0;
