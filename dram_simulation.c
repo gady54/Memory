@@ -128,7 +128,7 @@ uint32_t access_dram(DRAM *dram, uint32_t address, int *total_latency, void (*ad
 
     // Send the address and latency to the cache
     
-    //send_to_cache(address, latency);
+    send_to_cache(address, latency);
 
     // Update the global time and the bank's last accessed time
     dram->time += latency;

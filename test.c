@@ -5,7 +5,6 @@
 #include <stdint.h> // for uint32_t
 #include <stdlib.h> // for malloc and free
 #include "cache_simulation.h" // Include the new header file for cache_simulation.h
-#include "cache_simulation.c" // Include the new header file for cache_simulation.c
 
 #define A 0x1A2B3C00
 #define B 0xCA1B3C00
@@ -43,6 +42,9 @@ int main() {
     print_simulation_results();
 
     // Free the allocated memory
+    free(L1);
+    free(L2);
+    free(L3);
     //free(addresses);
 
     return 0;
