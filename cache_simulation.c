@@ -297,13 +297,10 @@ void print_simulation_results() {
            get_hits(), get_misses(), get_total_commands(), get_total_cycles());
 }
 
-void simulate_cache(unsigned int address) {
+//void simulate_cache(unsigned int address) {
     // Initialize caches
-    CacheLine* L1 = initialize_cache(L1_SIZE);
-    CacheLine* L2 = initialize_cache(L2_SIZE);
-    CacheLine* L3 = initialize_cache(L3_SIZE);
-
-    full_cache_logic(L1, L2, L3, address);
+    
+    
 
     // Test addresses - designed to generate a mix of hits, misses, and evictions
     /*
@@ -328,4 +325,4 @@ void simulate_cache(unsigned int address) {
     }
     printf("Total hits: %u, Misses: %u, Total Cycles: %u\n", hits, misses, cycles);
     */
-}
+//}

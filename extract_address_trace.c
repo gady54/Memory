@@ -46,8 +46,8 @@ unsigned int process_command(char *command, Register registers[], int num_regist
         unsigned int final_address = base_address + (unsigned int)offset;
 
         if (strcmp(instruction, "lw") == 0 || strcmp(instruction, "sw") == 0) {
-            printf("Command: %s, Final address: 0x%08X, Register: %s\n", command, final_address, strcmp(instruction, "lw") == 0 ? reg1 : reg2);
-            //send_to_cache_simulator(final_address);  // Send the address to the cache simulator
+            //printf("Command: %s, Final address: 0x%08X, Register: %s\n", command, final_address, strcmp(instruction, "lw") == 0 ? reg1 : reg2);
+            send_to_cache_simulator(final_address);  // Send the address to the cache simulator
         }
 
         // For 'sw' commands, update the base register address
@@ -62,14 +62,14 @@ unsigned int process_command(char *command, Register registers[], int num_regist
 
 int extract_addresses_from_file(const char *filename, unsigned int **addresses) {
     Register registers[NUM_REGISTERS] = {
-        {"ra", 0x1000}, {"sp", 0x2000}, {"a0", 0x3000}, {"a1", 0x4000},
+        {"ra", 0x00000000}, {"sp", 0xd53a2000}, {"a0", 0x3000}, {"a1", 0x4000},
         {"a2", 0x5000}, {"a3", 0x6000}, {"a4", 0x7000}, {"a5", 0x8000},
         {"a6", 0x9000}, {"a7", 0xA000}, {"t0", 0xB000}, {"t1", 0xC000},
-        {"t2", 0xD000}, {"t3", 0xE000}, {"t4", 0xF000}, {"t5", 0x10000},
-        {"t6", 0x11000}, {"s0", 0x12000}, {"s1", 0x13000}, {"s2", 0x14000},
-        {"s3", 0x15000}, {"s4", 0x16000}, {"s5", 0x17000}, {"s6", 0x18000},
-        {"s7", 0x19000}, {"s8", 0x1A000}, {"s9", 0x1B000}, {"s10", 0x1C000},
-        {"s11", 0x1D000}, {"x0", 0x1E000}, {"x1", 0x1F000}, {"x2", 0x20000}
+        {"t2", 0xD000}, {"t3", 0xE000}, {"t4", 0x569aF000}, {"t5", 0x10000},
+        {"t6", 0x11000}, {"s0", 0x1238b000}, {"s1", 0x13000}, {"s2", 0x14000},
+        {"s3", 0xbb815000}, {"s4", 0x16000}, {"s5", 0x17000}, {"s6", 0x18000},
+        {"s7", 0x19000}, {"s8", 0xba61A000}, {"s9", 0x1B000}, {"s10", 0x1C000},
+        {"s11", 0x1D000}, {"x0", 0x1E000}, {"x1", 0xff81F000}, {"x2", 0xfa620000}
     };
 
     //print_registers(registers, NUM_REGISTERS);  // Print initial register addresses for debugging

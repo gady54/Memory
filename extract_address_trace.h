@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define MAX_REQUESTS 10000
+#define MAX_REQUESTS 1000000
 #define NUM_REGISTERS 32
 
 typedef struct {

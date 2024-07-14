@@ -16,7 +16,7 @@
 #define RANK 1
 #define CACHE_BLOCK_SIZE 64 // Assuming 64 bytes cache block
 #define PRECHARGE_TIME 50 // Hypothetical precharge time
-#define MAX_REQUESTS 10000
+#define MAX_REQUESTS 10000000
 #define Mapping_Method "Row interleaving" // Using string instead of char
 
 // Global variable to store the last accessed address
@@ -159,10 +159,10 @@ int simulate_dram_access(uint32_t address) {
     // Set the address mapping function based on user choice
     if (strcmp(Mapping_Method, "Row interleaving") == 0) {
         address_mapping = row_interleaving;
-        printf("Using Row Interleaving:\n");
+        //printf("Using Row Interleaving:\n");
     } else if (strcmp(Mapping_Method, "Cache block interleaving") == 0) {
         address_mapping = cache_block_interleaving;
-        printf("Using Cache Block Interleaving:\n");
+        //printf("Using Cache Block Interleaving:\n");
     } else {
         printf("Invalid choice. Exiting.\n");
         return -1;
