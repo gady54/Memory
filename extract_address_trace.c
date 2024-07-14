@@ -62,14 +62,14 @@ unsigned int process_command(char *command, Register registers[], int num_regist
 
 int extract_addresses_from_file(const char *filename, unsigned int **addresses) {
     Register registers[NUM_REGISTERS] = {
-        {"ra", 0x00000000}, {"sp", 0xd53a2000}, {"a0", 0x3000}, {"a1", 0x4000},
-        {"a2", 0x5000}, {"a3", 0x6000}, {"a4", 0x7000}, {"a5", 0x8000},
-        {"a6", 0x9000}, {"a7", 0xA000}, {"t0", 0xB000}, {"t1", 0xC000},
-        {"t2", 0xD000}, {"t3", 0xE000}, {"t4", 0x569aF000}, {"t5", 0x10000},
-        {"t6", 0x11000}, {"s0", 0x1238b000}, {"s1", 0x13000}, {"s2", 0x14000},
-        {"s3", 0xbb815000}, {"s4", 0x16000}, {"s5", 0x17000}, {"s6", 0x18000},
-        {"s7", 0x19000}, {"s8", 0xba61A000}, {"s9", 0x1B000}, {"s10", 0x1C000},
-        {"s11", 0x1D000}, {"x0", 0x1E000}, {"x1", 0xff81F000}, {"x2", 0xfa620000}
+        {"ra", 0x00000000}, {"sp", 0xd53a2000}, {"a0", 0x3000598a}, {"a1", 0x4023adc9},
+        {"a2", 0xffaac532}, {"a3", 0xff6584ff}, {"a4", 0x1258cddf}, {"a5", 0x89cc2235},
+        {"a6", 0x13235eee}, {"a7", 0xabb12899}, {"t0", 0xaa232210}, {"t1", 0xc0035894},
+        {"t2", 0xaacc2254}, {"t3", 0xefd6358c}, {"t4", 0x569aF000}, {"t5", 0x112568dd},
+        {"t6", 0x110122dd}, {"s0", 0x1238b000}, {"s1", 0x13000987}, {"s2", 0x14000354},
+        {"s3", 0xbb815000}, {"s4", 0x16389ddb}, {"s5", 0x1701056a}, {"s6", 0x18000dda},
+        {"s7", 0x19985520}, {"s8", 0xba61A000}, {"s9", 0x1B0d0334}, {"s10", 0x1C0211fd},
+        {"s11", 0x1D045ddf}, {"x0", 0x1E0ffd20}, {"x1", 0xff81F000}, {"x2", 0xfa620000}
     };
 
     //print_registers(registers, NUM_REGISTERS);  // Print initial register addresses for debugging

@@ -13,7 +13,7 @@
 #define E 0xCA1B2C00
 
 int main() {
-    /*/
+    
     unsigned int* addresses;
     int num_addresses = extract_addresses_from_file("linpack_val.txt", &addresses);
     if (num_addresses == 0) {
@@ -21,23 +21,19 @@ int main() {
         return 1;
     }
 
-    /*/
+    
     CacheLine* L1 = initialize_cache(L1_SIZE);
     CacheLine* L2 = initialize_cache(L2_SIZE);
     CacheLine* L3 = initialize_cache(L3_SIZE);
 
-     unsigned int test_addresses[] = {
-        B, A, C, E, D,
-        B, A, D, E, C,
-        A, D, E, C, B,
-        E, C, A, D, B
-    };
+   
 
     // Process each address through the cache simulation
-    for (int i = 0; i < 20; i++) {
-        full_cache_logic(L1, L2, L3, test_addresses[i]);
+    for (int i = 0; i < num_addresses; i++) {
+        full_cache_logic(L1, L2, L3, addresses[i]);
+        print_index_and_tag(addresses[i],L1_SIZE,"L1");
     }
-
+    
     // Print final simulation results
     print_simulation_results();
 
