@@ -106,7 +106,7 @@ int is_in_cache_L2(CacheLine* L2, unsigned int address) {
 int is_in_cache_L3(CacheLine* L3, unsigned int address) {
     return is_in_cache(L3, address, L3_SIZE);
 }
-
+/*/
 void print_cache_values(CacheLine* cache, int cache_size, const char* cache_name) {
     int num_lines = cache_size / BLOCK_SIZE;
     printf("%s Cache Contents:\n", cache_name);
@@ -122,8 +122,7 @@ void print_cache_info(int cache_size, const char* cache_name) {
     int offset_bits = (int)log2(BLOCK_SIZE);
     int index_bits = (int)log2(num_lines);
     int tag_bits = ADDRESS_BITS - index_bits - offset_bits;
-    printf("%s: %d Index Bits, %d Tag Bits, %d Offset Bits, 1 Valid Bit\n",
-           cache_name, index_bits, tag_bits, offset_bits);
+    //printf("%s: %d Index Bits, %d Tag Bits, %d Offset Bits, 1 Valid Bit\n",cache_name, index_bits, tag_bits, offset_bits);
 }
 
 void print_index_and_tag(unsigned int address, int cache_size, const char* cache_name) {
@@ -132,9 +131,9 @@ void print_index_and_tag(unsigned int address, int cache_size, const char* cache
     unsigned int index = (address >> (int)log2(BLOCK_SIZE)) & index_mask;
     unsigned int tag = address >> (index_bits + (int)log2(BLOCK_SIZE));
 
-    printf("%s Address %08X: Index = %u, Tag = %08X\n", cache_name, address, index, tag);
+    //printf("%s Address %08X: Index = %u, Tag = %08X\n", cache_name, address, index, tag);
 }
-
+/*/
 unsigned int get_full_address(unsigned int index, unsigned int tag, int cache_size) {
     int index_bits = (int)log2(cache_size / BLOCK_SIZE);
     int offset_bits = (int)log2(BLOCK_SIZE);
@@ -147,24 +146,24 @@ unsigned int get_full_address(unsigned int index, unsigned int tag, int cache_si
 
 void moveToDram(unsigned int address) {
      cycles += (unsigned int)simulate_dram_access(address);
-    printf("moveToDram , %08X\n", address);
+    //printf("moveToDram , %08X\n", address);
 }
 
 void hit_miss_finder(CacheLine* L1, CacheLine* L2, CacheLine* L3, unsigned int address) {
     if (is_in_cache_L1(L1, address)) {
-        printf("Hit on L1 for address %08X\n", address);
+        //printf("Hit on L1 for address %08X\n", address);
         hits++;
         cycles += L1_cycles;
     } else if (is_in_cache_L2(L2, address)) {
-        printf("Hit on L2 for address %08X\n", address);
+        //printf("Hit on L2 for address %08X\n", address);
         hits++;
         cycles += L2_cycles + L1_cycles;
     } else if (is_in_cache_L3(L3, address)) {
-        printf("Hit on L3 for address %08X\n", address);
+        //printf("Hit on L3 for address %08X\n", address);
         hits++;
         cycles += L3_cycles + L1_cycles + L2_cycles;
     } else {
-        printf("Not found in cache. Upload from DRAM %08X\n", address);
+        //printf("Not found in cache. Upload from DRAM %08X\n", address);
         misses++;
         cycles += (unsigned int)simulate_dram_access(address) + L3_cycles + L1_cycles + L2_cycles;
     }

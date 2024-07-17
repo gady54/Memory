@@ -1,7 +1,7 @@
 #ifndef CACHE_SIMULATION_H
 #define CACHE_SIMULATION_H
 
-#define L1_SIZE (16 * 1024) // 16KB
+#define L1_SIZE (32 * 1024) // 16KB
 #define L2_SIZE (32 * 1024) // 32KB
 #define L3_SIZE (1024 * 1024 * 2) // 2MB
 #define BLOCK_SIZE 64 // Assuming block size is 64 bytes

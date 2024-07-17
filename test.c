@@ -6,16 +6,11 @@
 #include <stdlib.h> // for malloc and free
 #include "cache_simulation.h" // Include the new header file for cache_simulation.h
 
-#define A 0x1A2B3C00
-#define B 0xCA1B3C00
-#define C 0x3A2B3C00
-#define D 0x2A2B3C00
-#define E 0xCA1B2C00
 
 int main() {
     
     unsigned int* addresses;
-    int num_addresses = extract_addresses_from_file("linpack_val.txt", &addresses);
+    int num_addresses = extract_addresses_from_file("fibonacci_val.txt", &addresses);
     if (num_addresses == 0) {
         printf("No addresses extracted. Exiting.\n");
         return 1;
@@ -31,7 +26,7 @@ int main() {
     // Process each address through the cache simulation
     for (int i = 0; i < num_addresses; i++) {
         full_cache_logic(L1, L2, L3, addresses[i]);
-        print_index_and_tag(addresses[i],L1_SIZE,"L1");
+        //print_index_and_tag(addresses[i],L1_SIZE,"L1");
     }
     
     // Print final simulation results
