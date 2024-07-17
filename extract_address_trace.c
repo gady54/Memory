@@ -5,6 +5,11 @@
 #include "extract_address_trace.h"
 
 #define MAX_LINE_LENGTH 256
+char instruction[5];
+char reg1[3], reg2[3];
+int offset;
+unsigned int address1, address2;
+int count = 0;
 
 void print_registers(const Register registers[], int num_registers) {
     printf("Initial register addresses:\n");
@@ -31,23 +36,23 @@ void update_register_address(Register registers[], int num_registers, const char
     }
 }
 
-void send_to_cache_simulator(unsigned int address) {
-    // Placeholder function to simulate sending the address to the cache memory simulator
-    printf("Address 0x%08X sent to cache memory simulator\n", address);
+void send_to_cache_simulator(const char *reg_name, unsigned int address) {
+    printf("Register %s: Final address 0x%08X sent to cache memory simulator\n", reg_name, address);
 }
 
 unsigned int process_command(char *command, Register registers[], int num_registers) {
-    char instruction[3];
-    char reg1[3], reg2[3];
-    int offset;
-
-    if (sscanf(command, "%s %[^,],%d(%[^)])", instruction, reg1, &offset, reg2) == 4) {
+    if (sscanf(command, "Info %s %x -> %x", reg1, &address1, &address2) == 3) {
+        update_register_address(registers, num_registers, reg1, address2);
+        //send_to_cache_simulator(reg1, address2);
+        count--;
+        return address2;
+    } else if (sscanf(command, "%s %[^,],%d(%[^)])", instruction, reg1, &offset, reg2) == 4) {
         unsigned int base_address = get_register_address(registers, num_registers, reg2);
         unsigned int final_address = base_address + (unsigned int)offset;
 
         if (strcmp(instruction, "lw") == 0 || strcmp(instruction, "sw") == 0) {
-            //printf("Command: %s, Final address: 0x%08X, Register: %s\n", command, final_address, strcmp(instruction, "lw") == 0 ? reg1 : reg2);
-            send_to_cache_simulator(final_address);  // Send the address to the cache simulator
+            //send_to_cache_simulator(strcmp(instruction, "lw") == 0 ? reg1 : reg2, final_address);// Send the address to the cache simulator
+            update_register_address(registers, num_registers, reg1, final_address);  
         }
 
         // For 'sw' commands, update the base register address
@@ -56,6 +61,14 @@ unsigned int process_command(char *command, Register registers[], int num_regist
         }
 
         return final_address;
+    } else if (sscanf(command, "%s %[^,],%[^,],%d", instruction, reg1, reg2, &offset) == 4) {
+        if (strcmp(instruction, "addi") == 0) {
+            unsigned int src_address = get_register_address(registers, num_registers, reg2);
+            unsigned int new_address = src_address + (unsigned int)offset;
+            update_register_address(registers, num_registers, reg1, new_address);
+            //send_to_cache_simulator(reg1, new_address);  // Send the new address to the cache simulator
+            return new_address;
+        }
     }
     return 0;
 }
@@ -81,7 +94,7 @@ int extract_addresses_from_file(const char *filename, unsigned int **addresses) 
     }
 
     char line[MAX_LINE_LENGTH];
-    int count = 0;
+    
     unsigned int *temp_addresses = (unsigned int *)malloc(sizeof(unsigned int) * MAX_REQUESTS);
 
     while (fgets(line, sizeof(line), inputFile)) {
@@ -99,6 +112,14 @@ int extract_addresses_from_file(const char *filename, unsigned int **addresses) 
     *addresses = (unsigned int *)malloc(sizeof(unsigned int) * (size_t)count);
     memcpy(*addresses, temp_addresses, sizeof(unsigned int) * (size_t)count);
     free(temp_addresses);
-
+    
     return count;
 }
+/*/
+int main() {
+    unsigned int *addresses;
+    extract_addresses_from_file("address.txt", &addresses);
+ 
+    return 0;
+}
+/*/
