@@ -10,7 +10,7 @@
 int main() {
     
     unsigned int* addresses;
-    int num_addresses = extract_addresses_from_file("fibonacci_val.txt", &addresses);
+    int num_addresses = extract_addresses_from_file("linpack_val.txt", &addresses);
     if (num_addresses == 0) {
         printf("No addresses extracted. Exiting.\n");
         return 1;

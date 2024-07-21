@@ -3,7 +3,7 @@
 #include <stdint.h> // for uint32_t
 #include <stdbool.h>
 #include <string.h>
-#include "dram_simulation.h"
+#include <math.h> // for log2 function
 
 #define BUS_WIDTH 4
 #define CHANNELS 1
@@ -17,7 +17,7 @@
 #define CACHE_BLOCK_SIZE 64 // Assuming 64 bytes cache block
 #define PRECHARGE_TIME 50 // Hypothetical precharge time
 #define MAX_REQUESTS 10000000
-#define Mapping_Method "Row interleaving" // Using string instead of char
+#define Mapping_Method "Cache block interleaving" // Using string instead of char
 
 // Global variable to store the last accessed address
 uint32_t last_accessed_address = 0;
@@ -64,21 +64,33 @@ int get_next_request_index() {
     return oldest_index;
 }
 
+// Function to calculate the number of bits needed for a given size
+int calculate_bits_needed(int size) {
+    return (int)ceil(log2(size));
+}
+
 // Function for row interleaving: translate an address to bank, row, and column
 void row_interleaving(uint32_t address, int *bank, int *row, int *col) {
-    *col = (int)((address >> 2) & 0x3FF);        // Column is determined by bits 2-11 (10 bits)
-    *bank = (int)((address >> 12) & 0x3);        // Bank is determined by bits 12-13 (2 bits)
-    *row = (int)((address >> 14) & 0x3FFFF);     // Row is determined by bits 14-31 (18 bits)
+    int col_bits = calculate_bits_needed(COLUMNS); // Bits needed for columns
+    int bank_bits = calculate_bits_needed(BANKS);  // Bits needed for banks
+    int row_bits = 32 - (col_bits + bank_bits + 2); // Remaining bits for rows (address is 32 bits)
+
+    *col = (int)((address >> 2) & ((uint32_t)(1 << col_bits) - 1));     // Column is determined by bits 2 to (2+col_bits-1)
+    *bank = (int)((address >> (2 + col_bits)) & ((uint32_t)(1 << bank_bits) - 1)); // Bank is determined by bits (2+col_bits) to (2+col_bits+bank_bits-1)
+    *row = (int)((address >> (2 + col_bits + bank_bits)) & ((uint32_t)(1 << row_bits) - 1));  // Row is determined by the remaining bits
 }
 
 // Function for cache block interleaving: translate an address to bank, row, and column
 void cache_block_interleaving(uint32_t address, int *bank, int *row, int *col) {
-    int cache_block_offset_bits = 6; // log2(64), where 64 is the CACHE_BLOCK_SIZE
-    *bank = (address >> cache_block_offset_bits) & 0x3; // Bank is determined by bits 6-7 (2 bits)
-    *col = (address & 0x3F) | ((address >> 8) & 0x300); // Column determined by low 6 bits and 2 bits after 8 bits
-    *row = (address >> 10) & 0x3FFFF; // Row is determined by bits 10-31 (22 bits)
-}
+    int cache_block_offset_bits = calculate_bits_needed(CACHE_BLOCK_SIZE); // Bits needed for cache block offset
+    int col_bits = calculate_bits_needed(COLUMNS); // Bits needed for columns
+    int bank_bits = calculate_bits_needed(BANKS);  // Bits needed for banks
+    int row_bits = 32 - (cache_block_offset_bits + bank_bits); // Remaining bits for rows
 
+    *bank = (int)((address >> cache_block_offset_bits) & ((uint32_t)(1 << bank_bits) - 1)); // Bank is determined by bits after cache block offset
+    *col = (int)((address & ((uint32_t)(1 << cache_block_offset_bits) - 1)) | ((address >> (cache_block_offset_bits + bank_bits)) & ((uint32_t)((1 << col_bits) - 1) << cache_block_offset_bits))); // Column determined by cache block offset and next bits
+    *row = (int)((address >> (cache_block_offset_bits + bank_bits)) & ((uint32_t)(1 << row_bits) - 1)); // Row is determined by remaining bits
+}
 // Hypothetical function to simulate sending the address to the cache
 int send_to_cache(uint32_t address, int latency) {
     printf("Address 0x%08x is sent to the cache with latency %d cycles.\n", address, latency);
@@ -173,10 +185,8 @@ int simulate_dram_access(uint32_t address) {
 
     return total_latency;
 }
-
-
-// Function to print the state of the DRAM banks
 /*/
+// Function to print the state of the DRAM banks
 void print_dram_state(DRAM *dram) {
     printf("DRAM State:\n");
     printf("-------------------------------------------------------------\n");
@@ -213,9 +223,7 @@ int read_addresses_from_file(const char *filename, uint32_t **addresses) {
     return count;
 }
 
-
 // Main function to demonstrate the DRAM access simulation
-
 int main() {
     DRAM dram = {0}; // Declare and initialize a DRAM structure
     // Initialize DRAM banks

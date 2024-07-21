@@ -14,6 +14,12 @@ unsigned int DRAM_Cycle = 0;
 unsigned int oldL1Address;
 unsigned int oldL2Address;
 unsigned int oldL3Address;
+unsigned int misses_L1 =0;
+unsigned int misses_L2 =0;
+unsigned int misses_L3 =0;
+unsigned int hit_L1 =0;
+unsigned int hit_L2 =0;
+unsigned int hit_L3 =0;
 // end of global variables
 //----------------------------------------------------------------
 
@@ -153,18 +159,27 @@ void hit_miss_finder(CacheLine* L1, CacheLine* L2, CacheLine* L3, unsigned int a
     if (is_in_cache_L1(L1, address)) {
         //printf("Hit on L1 for address %08X\n", address);
         hits++;
+        hit_L1++;
         cycles += L1_cycles;
     } else if (is_in_cache_L2(L2, address)) {
         //printf("Hit on L2 for address %08X\n", address);
         hits++;
+        hit_L2++;
+        misses_L1++;
         cycles += L2_cycles + L1_cycles;
     } else if (is_in_cache_L3(L3, address)) {
         //printf("Hit on L3 for address %08X\n", address);
         hits++;
+        hit_L3++;
+        misses_L1++;
+        misses_L2++;
         cycles += L3_cycles + L1_cycles + L2_cycles;
     } else {
         //printf("Not found in cache. Upload from DRAM %08X\n", address);
         misses++;
+        misses_L1++;
+        misses_L2++;
+        misses_L3++;
         cycles += (unsigned int)simulate_dram_access(address) + L3_cycles + L1_cycles + L2_cycles;
     }
 }
@@ -218,6 +233,6 @@ void full_cache_logic(CacheLine* L1, CacheLine* L2, CacheLine* L3, unsigned int 
 }
 
 void print_simulation_results() {
-    printf("Total Hits: %u, Misses: %u, Total Commands: %u, Total Cycles: %u\n",
-           get_hits(), get_misses(), get_total_commands(), get_total_cycles());
+    printf("Total Hits: %u, Misses: %u, Total Commands: %u, Total Cycles: %u\n  Misses L1 : %u , Misses L2 : %u, Misses L3 : %u\n,  Hits L1 : %u , Hits L2 : %u, Hits L3 : %u\n",
+           get_hits(), get_misses(), get_total_commands(), get_total_cycles(), misses_L1,misses_L2,misses_L3,hit_L1,hit_L2,hit_L3);
 }
